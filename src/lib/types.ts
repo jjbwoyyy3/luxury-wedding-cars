@@ -10,10 +10,15 @@ export interface ContactInfo {
   email: string;
   instagram: string;
   location: string;
+  contactPageImageUrl?: string; // Added for editable contact page image
 }
 
 export interface AdminCredentials {
   email: string;
   passwordHash?: string; // For potential future hashing
   password?: string; // For initial hardcoded password
+}
+
+export interface SiteSettings {
+  heroImageUrl?: string;
 }

@@ -1,10 +1,11 @@
+
 "use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { logout } from '@/lib/actions';
-import { LayoutDashboard, Car, Contact, LogOut, Settings } from 'lucide-react';
+import { LayoutDashboard, Car, Contact, LogOut, Settings, Image as ImageIcon } from 'lucide-react'; // Added ImageIcon
 import Logo from '@/components/shared/Logo';
 import { cn } from '@/lib/utils';
 import {
@@ -18,7 +19,7 @@ const adminNavLinks = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/dashboard/cars', label: 'Manage Cars', icon: Car },
   { href: '/admin/dashboard/contact', label: 'Manage Contact', icon: Contact },
-  // { href: '/admin/dashboard/settings', label: 'Settings', icon: Settings } // Example for future
+  { href: '/admin/dashboard/settings', label: 'Site Settings', icon: Settings } 
 ];
 
 const AdminSidebar = ({ isCollapsed }: { isCollapsed: boolean }) => {

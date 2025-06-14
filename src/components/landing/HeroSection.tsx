@@ -2,8 +2,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
+import { getSiteSettings } from '@/lib/data-store'; // Import a function to get site settings
 
-const HeroSection = () => {
+const HeroSection = async () => { // Make component async
+  const siteSettings = await getSiteSettings();
+  const heroImageUrl = siteSettings?.heroImageUrl || "https://placehold.co/1200x800.png"; // Fallback
+
   return (
     <section className="py-16 md:py-24 bg-gradient-to-br from-background to-primary/5 rounded-lg shadow-xl overflow-hidden">
       <div className="container mx-auto px-4 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
@@ -29,7 +33,7 @@ const HeroSection = () => {
         </div>
         <div className="relative h-64 md:h-auto md:min-h-[400px] animate-fade-in [animation-delay:0.3s]">
           <Image
-            src="https://placehold.co/1200x800.png"
+            src={heroImageUrl}
             alt="Luxury wedding car convoy"
             layout="fill"
             objectFit="cover"

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Car, Contact, Settings, Eye } from "lucide-react";
+import { Car, Contact, Settings, Eye, Image as ImageIcon } from "lucide-react"; // Added ImageIcon
 
 export const metadata = {
   title: 'Admin Dashboard - Glitzy Rides',
@@ -46,23 +46,22 @@ export default function AdminDashboardPage() {
         />
         <QuickLinkCard 
           title="Manage Contact Info" 
-          description="Update your company's contact details displayed on the site." 
+          description="Update your company's contact details and contact page image." 
           href="/admin/dashboard/contact"
           icon={Contact}
         />
          <QuickLinkCard 
+          title="Site Settings" 
+          description="Manage global site elements like the homepage hero image." 
+          href="/admin/dashboard/settings"
+          icon={Settings}
+        />
+        <QuickLinkCard 
           title="View Website" 
           description="See the public website as your customers do." 
           href="/"
           icon={Eye}
         />
-        {/* Example for future expansion
-        <QuickLinkCard 
-          title="Site Settings" 
-          description="Configure general website settings and preferences." 
-          href="/admin/dashboard/settings"
-          icon={Settings}
-        /> */}
       </div>
     </div>
   );

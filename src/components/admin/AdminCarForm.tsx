@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import React, { useActionState, useEffect, useState, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,25 +38,31 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
   const { toast } = useToast();
 
   const [imagePreview, setImagePreview] = useState<string | null>(car?.imageUrl || null);
-  const [imageFileValue, setImageFileValue] = useState<string>(''); // Used to reset file input's controlled value
   const [finalImageUrl, setFinalImageUrl] = useState<string>(car?.imageUrl || '');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
+
 
   useEffect(() => {
     if (car) {
       setImagePreview(car.imageUrl);
       setFinalImageUrl(car.imageUrl);
+      if (nameInputRef.current) nameInputRef.current.value = car.name;
+      if (descriptionInputRef.current) descriptionInputRef.current.value = car.description;
     } else {
-      // For add mode, or if car becomes null
+      // For add mode
       setImagePreview(null);
       setFinalImageUrl('');
-      setImageFileValue(''); // Ensure file input is reset if form is for adding new
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (nameInputRef.current) nameInputRef.current.value = "";
+      if (descriptionInputRef.current) descriptionInputRef.current.value = "";
     }
   }, [car]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    const currentInputValue = event.target.value; // Store this to reset if needed
-    setImageFileValue(currentInputValue); // Update controlled component state
+    if (fileInputRef.current) fileInputRef.current.value = ""; // Clear momentarily to allow re-selection of same file
 
     if (file) {
       const reader = new FileReader();
@@ -69,30 +75,28 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
           toast({
             variant: "destructive",
             title: "Image Preview Error",
-            description: "Could not generate a valid preview. The file might be corrupted or an unsupported format. Please try another image.",
+            description: "Could not generate a valid preview. Please try another image.",
           });
-          // Revert to previous/original image if available, otherwise clear
-          setImagePreview(car?.imageUrl || null);
+          setImagePreview(car?.imageUrl || null); 
           setFinalImageUrl(car?.imageUrl || '');
-          setImageFileValue(''); // Clear the file input visually
+          if (fileInputRef.current) fileInputRef.current.value = "";
         }
       };
       reader.onerror = () => {
         toast({
           variant: "destructive",
           title: "Image Read Error",
-          description: "There was an error reading the image file. Please try again or select a different file.",
+          description: "There was an error reading the image file. Please try again.",
         });
         setImagePreview(car?.imageUrl || null);
         setFinalImageUrl(car?.imageUrl || '');
-        setImageFileValue(''); // Clear the file input visually
+        if (fileInputRef.current) fileInputRef.current.value = "";
       };
       reader.readAsDataURL(file);
     } else {
-      // No file selected (e.g., user cleared the selection in the dialog)
-      setImagePreview(car?.imageUrl || null); // Revert to original or clear if adding
-      setFinalImageUrl(car?.imageUrl || '');   // Revert to original or clear if adding
-      // imageFileValue will be "" here because event.target.value would be ""
+      // No file selected, revert to original if editing, or clear if adding
+      setImagePreview(car?.imageUrl || null);
+      setFinalImageUrl(car?.imageUrl || '');
     }
   };
 
@@ -109,13 +113,13 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
           // Reset form fields for "Add New" case
           setImagePreview(null);
           setFinalImageUrl('');
-          setImageFileValue(''); // Reset file input's controlled value
-          // Note: Text inputs with `defaultValue` will also need their parent form/dialog to be re-keyed or reset if not unmounted.
-          // In this Dialog setup, DialogContent might unmount/remount or `car` prop changes, handling reset.
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          if (nameInputRef.current) nameInputRef.current.value = "";
+          if (descriptionInputRef.current) descriptionInputRef.current.value = "";
         }
       }
     }
-  }, [state, toast, isEditing, onFormSubmit, car]); // Added `car` to deps for reset logic completeness
+  }, [state, toast, isEditing, onFormSubmit]);
 
   return (
     <Card className="w-full shadow-lg">
@@ -125,29 +129,28 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
       </CardHeader>
       <form action={dispatch}>
         {isEditing && car?.id && <input type="hidden" name="id" value={car.id} />}
-        {/* This hidden input sends the actual image URL or Data URI to the server */}
         <input type="hidden" name="imageUrl" value={finalImageUrl} />
 
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="name">Car Name</Label>
-            <Input id="name" name="name" defaultValue={car?.name || ""} placeholder="e.g., Rolls Royce Phantom" required />
+            <Input id="name" name="name" ref={nameInputRef} defaultValue={car?.name || ""} placeholder="e.g., Rolls Royce Phantom" required />
             {state?.errors?.name && <p className="text-sm text-destructive">{state.errors.name[0]}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea id="description" name="description" defaultValue={car?.description || ""} placeholder="e.g., The pinnacle of luxury motoring..." required />
+            <Textarea id="description" name="description" ref={descriptionInputRef} defaultValue={car?.description || ""} placeholder="e.g., The pinnacle of luxury motoring..." required />
             {state?.errors?.description && <p className="text-sm text-destructive">{state.errors.description[0]}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="imageFileUpload">Car Image</Label>
             <Input 
               id="imageFileUpload" 
-              name="imageFileUploadInput" // This name is not directly used by server action schema
+              name="imageFileUploadInput" 
               type="file" 
               accept="image/*" 
               onChange={handleFileChange}
-              value={imageFileValue} // Controlled component for reset capability
+              ref={fileInputRef} // Use ref here
               className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
             />
             {imagePreview && (
@@ -155,7 +158,6 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
                 <Image src={imagePreview} alt="Image Preview" layout="fill" objectFit="contain" />
               </div>
             )}
-            {/* Display error specific to imageUrl if provided by the server action's response */}
             {state?.errors?.imageUrl && <p className="text-sm text-destructive">{state.errors.imageUrl[0]}</p>}
           </div>
           

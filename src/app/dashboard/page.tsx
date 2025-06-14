@@ -11,6 +11,7 @@ export const metadata = {
 
 export default async function DashboardPage() {
   const contactInfo = await getContactInfo();
+  const contactPageImageUrl = contactInfo?.contactPageImageUrl || "https://placehold.co/800x600.png";
 
   const contactItems = [
     { icon: Phone, label: 'Phone', value: contactInfo.phone, href: `tel:${contactInfo.phone}` },
@@ -56,8 +57,8 @@ export default async function DashboardPage() {
         </Card>
         <div className="relative h-80 md:h-full min-h-[300px] rounded-lg shadow-xl overflow-hidden animate-fade-in [animation-delay:0.5s]">
            <Image
-            src="https://placehold.co/800x600.png"
-            alt="Luxury car interior"
+            src={contactPageImageUrl}
+            alt="Luxury car interior or contact image"
             layout="fill"
             objectFit="cover"
             data-ai-hint="luxury car interior"
