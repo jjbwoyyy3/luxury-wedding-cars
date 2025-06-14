@@ -12,7 +12,6 @@ import { AlertCircle, LogIn } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRouter } from "next/navigation";
 import { ADMIN_DASHBOARD_PATH } from '@/lib/auth';
 
 function SubmitButton() {
@@ -30,7 +29,6 @@ export default function LoginForm() {
   const initialState = { message: null, errors: {}, success: false };
   const [state, dispatch] = useActionState(login, initialState);
   const { toast } = useToast();
-  const router = useRouter();
 
   useEffect(() => {
     setIsMounted(true);
@@ -42,13 +40,13 @@ export default function LoginForm() {
         title: "Login Successful",
         description: "Redirecting to dashboard...",
       });
-      router.push(ADMIN_DASHBOARD_PATH);
-    } else if (state.message && !state.errors?.email && !state.errors?.password) { 
-      // Show general error toast only if there are no specific field errors and login wasn't successful
-      // (e.g. "Invalid email or password")
-      // state.errors being empty or undefined also implies !state.errors.email and !state.errors.password
-      // The "Invalid input." message comes with state.errors populated.
-      if (state.message !== "Invalid input.") { // Avoid double toast for validation message
+      // Use window.location.href for a full page redirect
+      window.location.href = ADMIN_DASHBOARD_PATH;
+    } else if (state.message) { 
+      // Show general error toast only if there are no specific field errors
+      // and login wasn't successful and the message is not "Invalid input."
+      // which is typically accompanied by field errors.
+      if (!state.errors?.email && !state.errors?.password && state.message !== "Invalid input.") {
          toast({
           variant: "destructive",
           title: "Login Failed",
@@ -56,7 +54,7 @@ export default function LoginForm() {
         });
       }
     }
-  }, [state, toast, router]);
+  }, [state, toast]);
 
   if (!isMounted) {
     return (
