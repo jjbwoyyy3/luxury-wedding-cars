@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState, useFormStatus } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +33,7 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
   const isEditing = !!car;
   const action = isEditing ? updateCar : addCar;
   const initialState = { message: null, errors: {}, success: false };
-  const [state, dispatch] = useFormState(action, initialState);
+  const [state, dispatch] = useActionState(action, initialState);
   const { toast } = useToast();
   const router = useRouter();
 

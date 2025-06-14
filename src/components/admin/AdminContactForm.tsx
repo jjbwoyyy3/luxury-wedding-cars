@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState, useFormStatus } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +29,7 @@ function SubmitButton() {
 export default function AdminContactForm({ contactInfo }: AdminContactFormProps) {
   const initialState = { message: null, errors: {}, success: false };
   // Bind current contactInfo to the action if needed, or ensure form has all fields
-  const [state, dispatch] = useFormState(updateContactInfo, initialState);
+  const [state, dispatch] = useActionState(updateContactInfo, initialState);
   const { toast } = useToast();
 
   useEffect(() => {
