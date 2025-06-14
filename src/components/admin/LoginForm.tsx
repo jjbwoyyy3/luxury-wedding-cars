@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useActionState, useOptimistic } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { login } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, LogIn } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -24,9 +24,14 @@ function SubmitButton() {
 }
 
 export default function LoginForm() {
+  const [isMounted, setIsMounted] = useState(false);
   const initialState = { message: null, errors: {} };
   const [state, dispatch] = useActionState(login, initialState);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (state?.message && !state.errors) { // General error message from server
@@ -38,6 +43,31 @@ export default function LoginForm() {
     }
   }, [state, toast]);
 
+  if (!isMounted) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-12">
+        <Card className="w-full max-w-md shadow-2xl">
+          <CardHeader className="text-center">
+            <Skeleton className="h-8 w-3/4 mx-auto mb-2" />
+            <Skeleton className="h-4 w-1/2 mx-auto" />
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-1/4 mb-1" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-1/4 mb-1" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Skeleton className="h-10 w-full" />
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-12">
