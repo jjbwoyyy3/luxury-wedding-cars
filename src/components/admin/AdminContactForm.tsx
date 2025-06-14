@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,8 +11,8 @@ import { AlertCircle, Save } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { ContactInfo } from "@/lib/types";
 import { updateContactInfo } from "@/lib/actions";
-import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation"; // Import useRouter
 
 interface AdminContactFormProps {
   contactInfo: ContactInfo;
@@ -30,9 +30,9 @@ function SubmitButton() {
 
 export default function AdminContactForm({ contactInfo }: AdminContactFormProps) {
   const initialState = { message: null, errors: {}, success: false };
-  // Bind current contactInfo to the action if needed, or ensure form has all fields
   const [state, dispatch] = useActionState(updateContactInfo, initialState);
   const { toast } = useToast();
+  const router = useRouter(); // Initialize router
 
   useEffect(() => {
     if (state.message) {
@@ -41,8 +41,11 @@ export default function AdminContactForm({ contactInfo }: AdminContactFormProps)
         description: state.message,
         variant: state.success ? "default" : "destructive",
       });
+      if (state.success) {
+        router.refresh(); // Refresh server components on the page
+      }
     }
-  }, [state, toast]);
+  }, [state, toast, router]); // Add router to dependency array
 
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-xl animate-fade-in">
