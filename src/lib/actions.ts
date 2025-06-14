@@ -1,3 +1,4 @@
+
 "use server";
 
 import { z } from "zod";
@@ -42,6 +43,7 @@ export async function login(prevState: any, formData: FormData) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
       message: "Invalid input.",
+      success: false,
     };
   }
 
@@ -54,13 +56,12 @@ export async function login(prevState: any, formData: FormData) {
       secure: process.env.NODE_ENV === "production",
       maxAge: 60 * 60 * 24 * 7, // 1 week
       path: "/",
+      sameSite: 'lax', // Explicitly set SameSite attribute
     });
+    return { success: true, message: "Login successful." };
   } else {
-    return { message: "Invalid email or password." };
+    return { message: "Invalid email or password.", success: false };
   }
-  // On successful login, redirect. We need to do this outside the try/catch
-  // or it might be caught by Next.js specific error handling for redirects.
-  redirect(ADMIN_DASHBOARD_PATH);
 }
 
 export async function logout() {
@@ -75,6 +76,7 @@ export async function addCar(prevState: any, formData: FormData) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
       message: "Invalid car data.",
+      success: false,
     };
   }
 
@@ -85,7 +87,7 @@ export async function addCar(prevState: any, formData: FormData) {
     revalidatePath("/");
     return { message: "Car added successfully.", success: true };
   } catch (error) {
-    return { message: "Failed to add car." };
+    return { message: "Failed to add car.", success: false };
   }
 }
 
@@ -94,16 +96,14 @@ export async function updateCar(prevState: any, formData: FormData) {
   const carId = rawData.id as string;
 
   if (!carId) {
-    return { message: "Car ID is missing." };
+    return { message: "Car ID is missing.", success: false };
   }
 
   const carToUpdate = await dbGetCarById(carId);
   if (!carToUpdate) {
-    return { message: "Car not found." };
+    return { message: "Car not found.", success: false };
   }
   
-  // Merge existing data with form data to handle partial updates if necessary
-  // For this schema, all fields are required for update except ID
   const dataToValidate = {
     id: carId,
     name: rawData.name || carToUpdate.name,
@@ -117,17 +117,18 @@ export async function updateCar(prevState: any, formData: FormData) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
       message: "Invalid car data.",
+      success: false,
     };
   }
   
   try {
     await dbUpdateCar(validatedFields.data as Car);
     revalidatePath(ADMIN_DASHBOARD_PATH + "/cars");
-    revalidatePath(`/cars`); // If there's a specific car page
+    revalidatePath(`/cars`); 
     revalidatePath("/");
     return { message: "Car updated successfully.", success: true };
   } catch (error) {
-    return { message: "Failed to update car." };
+    return { message: "Failed to update car.", success: false };
   }
 }
 
@@ -140,9 +141,9 @@ export async function deleteCar(id: string) {
       revalidatePath("/");
       return { message: "Car deleted successfully.", success: true };
     }
-    return { message: "Car not found or already deleted." };
+    return { message: "Car not found or already deleted.", success: false };
   } catch (error) {
-    return { message: "Failed to delete car." };
+    return { message: "Failed to delete car.", success: false };
   }
 }
 
@@ -154,6 +155,7 @@ export async function updateContactInfo(prevState: any, formData: FormData) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
       message: "Invalid contact information.",
+      success: false,
     };
   }
 
@@ -163,7 +165,7 @@ export async function updateContactInfo(prevState: any, formData: FormData) {
     revalidatePath("/dashboard"); // Public contact page
     return { message: "Contact information updated successfully.", success: true };
   } catch (error) {
-    return { message: "Failed to update contact information." };
+    return { message: "Failed to update contact information.", success: false };
   }
 }
 

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useState, useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { login } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import { AlertCircle, LogIn } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
+import { ADMIN_DASHBOARD_PATH } from '@/lib/auth';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -25,23 +27,36 @@ function SubmitButton() {
 
 export default function LoginForm() {
   const [isMounted, setIsMounted] = useState(false);
-  const initialState = { message: null, errors: {} };
+  const initialState = { message: null, errors: {}, success: false };
   const [state, dispatch] = useActionState(login, initialState);
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   useEffect(() => {
-    if (state?.message && !state.errors) { // General error message from server
-       toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: state.message,
+    if (state.success) {
+      toast({
+        title: "Login Successful",
+        description: "Redirecting to dashboard...",
       });
+      router.push(ADMIN_DASHBOARD_PATH);
+    } else if (state.message && !state.errors?.email && !state.errors?.password) { 
+      // Show general error toast only if there are no specific field errors and login wasn't successful
+      // (e.g. "Invalid email or password")
+      // state.errors being empty or undefined also implies !state.errors.email and !state.errors.password
+      // The "Invalid input." message comes with state.errors populated.
+      if (state.message !== "Invalid input.") { // Avoid double toast for validation message
+         toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: state.message,
+        });
+      }
     }
-  }, [state, toast]);
+  }, [state, toast, router]);
 
   if (!isMounted) {
     return (
@@ -111,7 +126,7 @@ export default function LoginForm() {
                 </p>
               )}
             </div>
-             {state?.message && !state.errors && (
+             {state?.message && !state.success && !state.errors?.email && !state.errors?.password && state.message !== "Invalid input." && (
               <Alert variant="destructive" className="mt-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Error</AlertTitle>
