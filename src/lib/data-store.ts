@@ -1,109 +1,137 @@
-
+import { db } from './firebase';
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  setDoc,
+  query,
+  orderBy,
+  Timestamp,
+} from 'firebase/firestore';
 import type { Car, ContactInfo, AdminCredentials, SiteSettings } from './types';
 
-interface AppData {
-  cars: Car[];
-  contactInfo: ContactInfo;
-  adminCredentials: AdminCredentials;
-  siteSettings: SiteSettings;
-}
+const CARS_COLLECTION = 'cars';
+const CONFIG_COLLECTION = 'configuration';
+const CONTACT_DOC_ID = 'contactInfo';
+const ADMIN_CREDENTIALS_DOC_ID = 'adminCredentials';
+const SITE_SETTINGS_DOC_ID = 'siteSettings';
 
-// In-memory store
-let data: AppData = {
-  cars: [], // Initialize with an empty array
-  contactInfo: {
-    phone: '+1 (555) 123-GARS (4549)',
-    email: 'bookings@glitzyrides.com',
-    instagram: '@GlitzyRidesOfficial',
-    location: '456 Opulence Avenue, Diamond District, NY',
-    contactPageImageUrl: 'https://placehold.co/800x600.png',
-  },
-  adminCredentials: {
-    email: 'mjj.chethipuzha@gmail.com',
-    password: 'salbin707123',
-  },
-  siteSettings: {
-    heroImageUrl: 'https://placehold.co/1200x800.png',
-  }
+// Default data for seeding if documents don't exist
+const DEFAULT_CONTACT_INFO: ContactInfo = {
+  phone: '+1 (555) 123-GARS (4549)',
+  email: 'bookings@glitzyrides.com',
+  instagram: '@GlitzyRidesOfficial',
+  location: '456 Opulence Avenue, Diamond District, NY',
+  contactPageImageUrl: 'https://placehold.co/800x600.png',
 };
 
-// Simulate API delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const DEFAULT_ADMIN_CREDENTIALS: AdminCredentials = {
+  email: 'mjj.chethipuzha@gmail.com',
+  // IMPORTANT: Storing plain text passwords is not secure. Use Firebase Authentication.
+  password: 'salbin707123',
+};
 
-// Helper function to create deep copies to simulate immutable data updates
-const deepCopy = <T>(obj: T): T => JSON.parse(JSON.stringify(obj));
+const DEFAULT_SITE_SETTINGS: SiteSettings = {
+  heroImageUrl: 'https://placehold.co/1200x800.png',
+};
+
 
 export const getCars = async (): Promise<Car[]> => {
-  await delay(100);
-  // Return a deep copy to ensure components get new references if data changes
-  return deepCopy(data.cars.map(car => ({
-    ...car,
-    // The data-ai-hint is primarily for Next/Image if it were to use AI for placeholders,
-    // but not strictly necessary for Data URIs. Retaining for consistency.
-    ['data-ai-hint']: car.name.toLowerCase().split(' ').slice(0,2).join(' ') || "luxury car"
-  })));
+  const carsCollection = collection(db, CARS_COLLECTION);
+  // Order by 'createdAt' in descending order to get newest cars first
+  // Note: You'll need to ensure 'createdAt' field is set when adding cars
+  // and create a composite index in Firestore if you use more complex queries.
+  // For simplicity, I'm omitting orderBy for now if 'createdAt' isn't being set.
+  // const q = query(carsCollection, orderBy("name", "asc")); // Example ordering
+  const carsSnapshot = await getDocs(carsCollection);
+  const carList = carsSnapshot.docs.map(docSnapshot => ({
+    id: docSnapshot.id,
+    ...(docSnapshot.data() as Omit<Car, 'id'>),
+  }));
+  return carList;
 };
 
 export const getCarById = async (id: string): Promise<Car | undefined> => {
-  await delay(50);
-  const car = data.cars.find(c => c.id === id);
-  if (car) {
-    const carCopy = deepCopy(car);
-    carCopy['data-ai-hint'] = car.name.toLowerCase().split(' ').slice(0,2).join(' ') || "luxury car";
-    return carCopy;
+  const carDocRef = doc(db, CARS_COLLECTION, id);
+  const carSnapshot = await getDoc(carDocRef);
+  if (carSnapshot.exists()) {
+    return { id: carSnapshot.id, ...(carSnapshot.data() as Omit<Car, 'id'>) };
   }
   return undefined;
 };
 
 export const addCar = async (carData: Omit<Car, 'id'>): Promise<Car> => {
-  await delay(200);
-  const newCar: Car = { ...carData, id: String(Date.now() + Math.random()) };
-  // Add to the beginning of the array to show newest first
-  data.cars = [newCar, ...data.cars];
-  return deepCopy(newCar);
+  // Consider adding a createdAt timestamp for ordering
+  // const carPayload = { ...carData, createdAt: Timestamp.now() };
+  const docRef = await addDoc(collection(db, CARS_COLLECTION), carData);
+  return { id: docRef.id, ...carData };
 };
 
 export const updateCar = async (updatedCarData: Car): Promise<Car | undefined> => {
-  await delay(200);
-  const index = data.cars.findIndex(car => car.id === updatedCarData.id);
-  if (index !== -1) {
-    // Ensure we create a new object for the updated car to help React detect changes
-    data.cars[index] = deepCopy({ ...data.cars[index], ...updatedCarData });
-    return deepCopy(data.cars[index]);
-  }
-  return undefined;
+  const carDocRef = doc(db, CARS_COLLECTION, updatedCarData.id);
+  // Make sure not to pass the id into the data to be updated
+  const { id, ...dataToUpdate } = updatedCarData;
+  await updateDoc(carDocRef, dataToUpdate);
+  return updatedCarData; // Return the full object as passed
 };
 
 export const deleteCar = async (id: string): Promise<boolean> => {
-  await delay(200);
-  const initialLength = data.cars.length;
-  data.cars = data.cars.filter(car => car.id !== id);
-  return data.cars.length < initialLength;
+  const carDocRef = doc(db, CARS_COLLECTION, id);
+  await deleteDoc(carDocRef);
+  return true; // Assume success, or add error handling
 };
 
+
+// Configuration getters/setters
+
 export const getContactInfo = async (): Promise<ContactInfo> => {
-  await delay(50);
-  return deepCopy(data.contactInfo);
+  const docRef = doc(db, CONFIG_COLLECTION, CONTACT_DOC_ID);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return docSnap.data() as ContactInfo;
+  } else {
+    // Document doesn't exist, create it with default values
+    await setDoc(docRef, DEFAULT_CONTACT_INFO);
+    return DEFAULT_CONTACT_INFO;
+  }
 };
 
 export const updateContactInfo = async (newContactInfo: Partial<ContactInfo>): Promise<ContactInfo> => {
-  await delay(200);
-  data.contactInfo = deepCopy({ ...data.contactInfo, ...newContactInfo });
-  return deepCopy(data.contactInfo);
+  const docRef = doc(db, CONFIG_COLLECTION, CONTACT_DOC_ID);
+  await setDoc(docRef, newContactInfo, { merge: true }); // Use set with merge to create if not exist or update
+  const updatedDoc = await getDoc(docRef); // Re-fetch to return the full, merged object
+  return updatedDoc.data() as ContactInfo;
 };
 
 export const getAdminCredentials = async (): Promise<AdminCredentials> => {
-  await delay(10);
-  return deepCopy(data.adminCredentials);
+  const docRef = doc(db, CONFIG_COLLECTION, ADMIN_CREDENTIALS_DOC_ID);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return docSnap.data() as AdminCredentials;
+  } else {
+    await setDoc(docRef, DEFAULT_ADMIN_CREDENTIALS);
+    return DEFAULT_ADMIN_CREDENTIALS;
+  }
 };
 
 export const getSiteSettings = async (): Promise<SiteSettings> => {
-  await delay(50);
-  return deepCopy(data.siteSettings);
+  const docRef = doc(db, CONFIG_COLLECTION, SITE_SETTINGS_DOC_ID);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return docSnap.data() as SiteSettings;
+  } else {
+    await setDoc(docRef, DEFAULT_SITE_SETTINGS);
+    return DEFAULT_SITE_SETTINGS;
+  }
 };
 
 export const updateSiteSettings = async (newSettings: Partial<SiteSettings>): Promise<SiteSettings> => {
-  await delay(200);
-  data.siteSettings = deepCopy({ ...data.siteSettings, ...newSettings });
-  return deepCopy(data.siteSettings);
+  const docRef = doc(db, CONFIG_COLLECTION, SITE_SETTINGS_DOC_ID);
+  await setDoc(docRef, newSettings, { merge: true });
+  const updatedDoc = await getDoc(docRef);
+  return updatedDoc.data() as SiteSettings;
 };
