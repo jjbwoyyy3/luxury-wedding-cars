@@ -61,7 +61,8 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (fileInputRef.current) fileInputRef.current.value = ""; 
+    // Don't try to reset fileInputRef.current.value here if it was done in useEffect for 'add' mode.
+    // Only reset if an error occurs below, or after successful upload of a *new* car.
 
     if (file) {
       const reader = new FileReader();
@@ -74,11 +75,11 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
           toast({
             variant: "destructive",
             title: "Image Preview Error",
-            description: "Could not generate a valid preview. Please try another image.",
+            description: "Could not generate a valid preview. Please try another image or ensure it's a standard image type.",
           });
           setImagePreview(car?.imageUrl || null); 
-          setFinalImageUrl(car?.imageUrl || '');
-          if (fileInputRef.current) fileInputRef.current.value = "";
+          setFinalImageUrl(car?.imageUrl || ''); // Revert to original or empty
+          if (fileInputRef.current) fileInputRef.current.value = ""; // Clear selection on error
         }
       };
       reader.onerror = () => {
@@ -88,11 +89,12 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
           description: "There was an error reading the image file. Please try again.",
         });
         setImagePreview(car?.imageUrl || null);
-        setFinalImageUrl(car?.imageUrl || '');
-        if (fileInputRef.current) fileInputRef.current.value = "";
+        setFinalImageUrl(car?.imageUrl || ''); // Revert to original or empty
+        if (fileInputRef.current) fileInputRef.current.value = ""; // Clear selection on error
       };
       reader.readAsDataURL(file);
     } else {
+      // No file selected, revert to original image if editing, or no image if adding
       setImagePreview(car?.imageUrl || null);
       setFinalImageUrl(car?.imageUrl || '');
     }
@@ -108,7 +110,7 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
       if (state.success) {
         if (onFormSubmit) onFormSubmit();
         if (!isEditing) {
-          // Reset form fields for "Add New" case
+          // Reset form fields for "Add New" case after successful submission
           setName("");
           setDescription("");
           setImagePreview(null);
@@ -158,7 +160,7 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
             <Label htmlFor="imageFileUpload">Car Image</Label>
             <Input 
               id="imageFileUpload" 
-              name="imageFileUploadInput" 
+              name="imageFileUploadInput" // This name doesn't matter for action, but good for label
               type="file" 
               accept="image/*" 
               onChange={handleFileChange}
@@ -171,6 +173,7 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
               </div>
             )}
             {state?.errors?.imageUrl && <p className="text-sm text-destructive">{state.errors.imageUrl[0]}</p>}
+             <p className="text-xs text-muted-foreground">Upload a new image or leave empty to keep the current one (if editing).</p>
           </div>
           
           {state.message && state.message !== "" && !state.success && (

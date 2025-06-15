@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -15,13 +16,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteCar } from '@/lib/actions';
+import { deleteCar } from '@/lib/actions'; // Assuming deleteCar action handles revalidation
 import { useToast } from '@/hooks/use-toast';
 import { useState, useTransition } from 'react';
 
 interface AdminCarItemProps {
   car: Car;
   onEdit: (car: Car) => void;
+  // onDeleteSuccess?: () => void; // Optional callback if page needs to re-fetch after delete
 }
 
 export default function AdminCarItem({ car, onEdit }: AdminCarItemProps) {
@@ -31,26 +33,35 @@ export default function AdminCarItem({ car, onEdit }: AdminCarItemProps) {
 
   const handleDelete = async () => {
     startDeleteTransition(async () => {
-      const result = await deleteCar(car.id);
+      const result = await deleteCar(car.id); // deleteCar should call revalidatePath
       if (result.success) {
         toast({ title: "Car Deleted", description: result.message });
+        // The page (AdminCarsPage) should re-fetch due to revalidatePath.
+        // If an explicit refresh is needed here, an onDeleteSuccess callback could be used.
       } else {
         toast({ variant: "destructive", title: "Error", description: result.message });
       }
-      setIsAlertOpen(false); // Close dialog after action
+      setIsAlertOpen(false); 
     });
   };
+
+  // Ensure car.imageUrl has a fallback for robustness, even if schema requires it.
+  const imageUrl = car.imageUrl || "https://placehold.co/100x75.png";
+  const aiHint = car.name ? car.name.toLowerCase().split(' ').slice(0,2).join(' ') : "luxury car";
+
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border rounded-lg shadow-sm bg-card hover:shadow-md transition-shadow">
       <div className="flex items-center gap-4 flex-1 min-w-0">
         <div className="relative w-20 h-16 sm:w-24 sm:h-20 rounded-md overflow-hidden flex-shrink-0">
           <Image
-            src={car.imageUrl || "https://placehold.co/100x75.png"}
+            src={imageUrl}
             alt={car.name}
             fill
+            sizes="(max-width: 640px) 80px, 96px" // Basic sizes prop
             className="object-cover"
-            data-ai-hint={car.name.toLowerCase().split(' ').slice(0,2).join(' ') || "small car"}
+            data-ai-hint={aiHint}
+            key={imageUrl} // Add key to force re-render if src changes, useful for Data URIs
           />
         </div>
         <div className="flex-1 min-w-0">

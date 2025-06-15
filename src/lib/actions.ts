@@ -12,6 +12,8 @@ import {
   updateContactInfo as dbUpdateContactInfo,
   getCarById as dbGetCarById,
   updateSiteSettings as dbUpdateSiteSettings,
+  getContactInfo as dbGetContactInfo, // For currentData in case of error
+  getSiteSettings as dbGetSiteSettings, // For currentData in case of error
 } from "./data-store";
 import type { Car, ContactInfo, SiteSettings } from "./types";
 import { ADMIN_DASHBOARD_PATH, ADMIN_LOGIN_PATH, ADMIN_SESSION_COOKIE_NAME } from "./auth";
@@ -23,6 +25,7 @@ const LoginSchema = z.object({
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
 });
 
+// Reusable schema for image URLs (can be http/https or data URI)
 const ImageUrlSchema = z.string().refine(
   (val) => val.startsWith('http://') || val.startsWith('https://') || val.startsWith('data:image/'), 
   { message: "Image is required and must be a valid URL or a data URI." }
@@ -32,7 +35,7 @@ const CarSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(3, "Name must be at least 3 characters."),
   description: z.string().min(10, "Description must be at least 10 characters."),
-  imageUrl: ImageUrlSchema,
+  imageUrl: ImageUrlSchema, // Image is mandatory for cars
 });
 
 const ContactInfoSchema = z.object({
@@ -40,11 +43,11 @@ const ContactInfoSchema = z.object({
   email: z.string().email("Invalid email address."),
   instagram: z.string().min(3, "Instagram handle seems too short."),
   location: z.string().min(5, "Location seems too short."),
-  contactPageImageUrl: ImageUrlSchema.optional().or(z.literal('')), // Optional, can be empty string if not updated
+  contactPageImageUrl: ImageUrlSchema.optional().or(z.literal('')), // Optional, can be empty string
 });
 
 const SiteSettingsSchema = z.object({
-  heroImageUrl: ImageUrlSchema.optional().or(z.literal('')), // Optional for hero image
+  heroImageUrl: ImageUrlSchema.optional().or(z.literal('')), // Optional, can be empty string
 });
 
 
@@ -70,9 +73,10 @@ export async function login(prevState: any, formData: FormData) {
       path: "/",
       sameSite: 'lax',
     });
+    // Redirect is handled client-side now
     return { success: true, message: "Login successful." };
   } else {
-    return { message: "Invalid email or password.", success: false };
+    return { success: false, message: "Invalid email or password." };
   }
 }
 
@@ -83,31 +87,33 @@ export async function logout() {
 
 export async function addCar(prevState: any, formData: FormData) {
   const rawData = Object.fromEntries(formData.entries());
+  // imageUrl comes directly from the hidden input, which holds the Data URI or existing URL
   const carData = {
     name: rawData.name,
     description: rawData.description,
-    imageUrl: rawData.imageUrl, // This is the Data URI or URL from hidden input
+    imageUrl: rawData.imageUrl,
   };
   const validatedFields = CarSchema.safeParse(carData);
 
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
-      message: "Invalid car data.",
+      message: "Invalid car data. Ensure all fields are correct and an image is provided.",
       success: false,
     };
   }
   
   try {
-    const { id, ...dataToAdd } = validatedFields.data;
+    // id is not part of validatedFields.data when adding, so we pass only name, desc, imageUrl
+    const { id, ...dataToAdd } = validatedFields.data; // id will be undefined here
     await dbAddCar(dataToAdd as Omit<Car, 'id'>);
     revalidatePath(ADMIN_DASHBOARD_PATH + "/cars");
-    revalidatePath("/cars");
-    revalidatePath("/");
+    revalidatePath("/cars"); // Public cars page
+    revalidatePath("/");     // Home page (if featured cars are shown)
     return { message: "Car added successfully.", success: true };
   } catch (error) {
     console.error("Add car error:", error);
-    return { message: "Failed to add car.", success: false };
+    return { message: "Failed to add car. Please try again.", success: false };
   }
 }
 
@@ -116,19 +122,21 @@ export async function updateCar(prevState: any, formData: FormData) {
   const carId = rawData.id as string;
 
   if (!carId) {
-    return { message: "Car ID is missing.", success: false };
+    return { message: "Car ID is missing. Cannot update.", success: false };
   }
 
+  // Fetch existing car to compare, not strictly necessary for update but good for context
   const carToUpdate = await dbGetCarById(carId);
   if (!carToUpdate) {
-    return { message: "Car not found.", success: false };
+    return { message: "Car not found. Cannot update.", success: false };
   }
   
+  // imageUrl comes directly from the hidden input
   const dataToValidate = {
     id: carId,
     name: rawData.name || carToUpdate.name,
     description: rawData.description || carToUpdate.description,
-    imageUrl: rawData.imageUrl || carToUpdate.imageUrl, // imageUrl from hidden input
+    imageUrl: rawData.imageUrl || carToUpdate.imageUrl, 
   };
 
   const validatedFields = CarSchema.safeParse(dataToValidate);
@@ -136,7 +144,7 @@ export async function updateCar(prevState: any, formData: FormData) {
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
-      message: "Invalid car data.",
+      message: "Invalid car data. Ensure all fields are correct.",
       success: false,
     };
   }
@@ -144,12 +152,12 @@ export async function updateCar(prevState: any, formData: FormData) {
   try {
     await dbUpdateCar(validatedFields.data as Car);
     revalidatePath(ADMIN_DASHBOARD_PATH + "/cars");
-    revalidatePath(`/cars`); 
+    revalidatePath("/cars"); 
     revalidatePath("/");
     return { message: "Car updated successfully.", success: true };
   } catch (error) {
     console.error("Update car error:", error);
-    return { message: "Failed to update car.", success: false };
+    return { message: "Failed to update car. Please try again.", success: false };
   }
 }
 
@@ -171,22 +179,16 @@ export async function deleteCar(id: string) {
 
 export async function updateContactInfo(prevState: any, formData: FormData) {
   const rawData = Object.fromEntries(formData.entries());
+  const currentData = await dbGetContactInfo(); // Get current data for comparison/fallback
+
   const dataToValidate: Partial<ContactInfo> = {
-    phone: rawData.phone as string,
-    email: rawData.email as string,
-    instagram: rawData.instagram as string,
-    location: rawData.location as string,
+    phone: rawData.phone as string || currentData.phone,
+    email: rawData.email as string || currentData.email,
+    instagram: rawData.instagram as string || currentData.instagram,
+    location: rawData.location as string || currentData.location,
+    contactPageImageUrl: (rawData.contactPageImageUrl as string)?.trim() || currentData.contactPageImageUrl || "",
   };
   
-  // Only include contactPageImageUrl if it's provided and not an empty string
-  if (rawData.contactPageImageUrl && typeof rawData.contactPageImageUrl === 'string' && rawData.contactPageImageUrl.trim() !== '') {
-    dataToValidate.contactPageImageUrl = rawData.contactPageImageUrl;
-  } else if (!rawData.contactPageImageUrl && prevState?.currentData?.contactPageImageUrl) {
-    // If no new image is provided, keep the existing one (edge case, usually hidden input sends current)
-    // This part might be redundant if hidden input correctly sends previous value when no new file.
-  }
-
-
   const validatedFields = ContactInfoSchema.safeParse(dataToValidate);
 
   if (!validatedFields.success) {
@@ -194,27 +196,27 @@ export async function updateContactInfo(prevState: any, formData: FormData) {
       errors: validatedFields.error.flatten().fieldErrors,
       message: "Invalid contact information.",
       success: false,
-      currentData: prevState?.currentData // Pass back current data for form repopulation on server error
+      currentData: currentData 
     };
   }
   
   try {
     const updatedData = await dbUpdateContactInfo(validatedFields.data);
     revalidatePath(ADMIN_DASHBOARD_PATH + "/contact");
-    revalidatePath("/dashboard"); // Public contact page
+    revalidatePath("/dashboard"); 
     return { message: "Contact information updated successfully.", success: true, currentData: updatedData };
   } catch (error) {
-    return { message: "Failed to update contact information.", success: false, currentData: prevState?.currentData };
+    return { message: "Failed to update contact information.", success: false, currentData: currentData };
   }
 }
 
 export async function updateSiteSettings(prevState: any, formData: FormData) {
   const rawData = Object.fromEntries(formData.entries());
-   const dataToValidate: Partial<SiteSettings> = {};
+  const currentData = await dbGetSiteSettings(); // Get current data
 
-  if (rawData.heroImageUrl && typeof rawData.heroImageUrl === 'string' && rawData.heroImageUrl.trim() !== '') {
-    dataToValidate.heroImageUrl = rawData.heroImageUrl;
-  }
+  const dataToValidate: Partial<SiteSettings> = {
+     heroImageUrl: (rawData.heroImageUrl as string)?.trim() || currentData.heroImageUrl || "",
+  };
 
   const validatedFields = SiteSettingsSchema.safeParse(dataToValidate);
 
@@ -223,22 +225,22 @@ export async function updateSiteSettings(prevState: any, formData: FormData) {
       errors: validatedFields.error.flatten().fieldErrors,
       message: "Invalid site settings data.",
       success: false,
-      currentData: prevState?.currentData
+      currentData: currentData
     };
   }
 
-  try {
-    // Only update if there's actual data to update
-    if (Object.keys(validatedFields.data).length === 0 && Object.keys(dataToValidate).length === 0) {
-       return { message: "No changes to save.", success: true, noChanges: true, currentData: prevState?.currentData };
-    }
+  // Check if anything actually changed
+  if (dataToValidate.heroImageUrl === currentData.heroImageUrl) {
+      return { message: "No changes to save.", success: true, noChanges: true, currentData: currentData };
+  }
 
+  try {
     const updatedData = await dbUpdateSiteSettings(validatedFields.data);
     revalidatePath(ADMIN_DASHBOARD_PATH + "/settings");
-    revalidatePath("/"); // Revalidate home page for hero image
+    revalidatePath("/"); 
     return { message: "Site settings updated successfully.", success: true, currentData: updatedData };
   } catch (error) {
-    return { message: "Failed to update site settings.", success: false, currentData: prevState?.currentData };
+    return { message: "Failed to update site settings.", success: false, currentData: currentData };
   }
 }
 
