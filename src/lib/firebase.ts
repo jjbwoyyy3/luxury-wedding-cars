@@ -5,6 +5,7 @@ import { getFirestore, type Firestore } from "firebase/firestore";
 
 // IMPORTANT: Replace with your actual Firebase project configuration
 // You can find this in your Firebase project settings -> General -> Your apps -> Web app
+// Ensure ALL "YOUR_..." placeholders below are replaced with your real credentials.
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY", // Replace with your actual API key
   authDomain: "YOUR_PROJECT_ID.firebaseapp.com", // Replace with your actual auth domain
