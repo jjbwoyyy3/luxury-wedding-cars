@@ -10,26 +10,20 @@ interface AppData {
 
 // In-memory store
 let data: AppData = {
-  cars: [
-    { id: '1', name: 'Rolls Royce Phantom', description: 'The pinnacle of luxury motoring. Make an unforgettable entrance.', imageUrl: 'https://placehold.co/800x600.png' },
-    { id: '2', name: 'Bentley Continental GT', description: 'Grand touring excellence with breathtaking performance and exquisite craftsmanship.', imageUrl: 'https://placehold.co/800x600.png' },
-    { id: '3', name: 'Mercedes-Maybach S-Class', description: 'Opulence and cutting-edge technology combined for an unparalleled chauffeured experience.', imageUrl: 'https://placehold.co/800x600.png' },
-    { id: '4', name: 'Lamborghini Urus', description: 'The world\'s first Super Sport Utility Vehicle, where luxury meets thrilling performance.', imageUrl: 'https://placehold.co/800x600.png' },
-    { id: '5', name: 'Ferrari Portofino M', description: 'A stunning convertible supercar offering exhilarating drives and timeless Italian style.', imageUrl: 'https://placehold.co/800x600.png' },
-  ],
+  cars: [], // Initialize with an empty array
   contactInfo: {
     phone: '+1 (555) 123-GARS (4549)',
     email: 'bookings@glitzyrides.com',
     instagram: '@GlitzyRidesOfficial',
     location: '456 Opulence Avenue, Diamond District, NY',
-    contactPageImageUrl: 'https://placehold.co/800x600.png', 
+    contactPageImageUrl: 'https://placehold.co/800x600.png',
   },
   adminCredentials: {
     email: 'mjj.chethipuzha@gmail.com',
-    password: 'salbin707123', 
+    password: 'salbin707123',
   },
   siteSettings: {
-    heroImageUrl: 'https://placehold.co/1200x800.png', 
+    heroImageUrl: 'https://placehold.co/1200x800.png',
   }
 };
 
@@ -40,7 +34,7 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const deepCopy = <T>(obj: T): T => JSON.parse(JSON.stringify(obj));
 
 export const getCars = async (): Promise<Car[]> => {
-  await delay(100); 
+  await delay(100);
   // Return a deep copy to ensure components get new references if data changes
   return deepCopy(data.cars.map(car => ({
     ...car,
@@ -63,9 +57,9 @@ export const getCarById = async (id: string): Promise<Car | undefined> => {
 
 export const addCar = async (carData: Omit<Car, 'id'>): Promise<Car> => {
   await delay(200);
-  const newCar: Car = { ...carData, id: String(Date.now() + Math.random()) }; 
+  const newCar: Car = { ...carData, id: String(Date.now() + Math.random()) };
   // Add to the beginning of the array to show newest first
-  data.cars = [newCar, ...data.cars]; 
+  data.cars = [newCar, ...data.cars];
   return deepCopy(newCar);
 };
 
