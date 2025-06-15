@@ -31,7 +31,7 @@ function SubmitButton() {
 
 export default function AdminContactForm({ contactInfo: initialContactInfo }: AdminContactFormProps) {
   const [currentContactInfo, setCurrentContactInfo] = useState(initialContactInfo);
-  const initialState = { message: null, errors: {}, success: false, currentData: initialContactInfo };
+  const initialState = { message: "", errors: {}, success: false, currentData: initialContactInfo };
   const [state, dispatch] = useActionState(updateContactInfo, initialState);
   const { toast } = useToast();
   const router = useRouter();
@@ -143,7 +143,7 @@ export default function AdminContactForm({ contactInfo: initialContactInfo }: Ad
             />
             {imagePreview && (
               <div className="mt-2 relative w-full h-48 rounded-md overflow-hidden border">
-                <Image src={imagePreview} alt="Contact Page Image Preview" layout="fill" objectFit="contain" />
+                <Image src={imagePreview} alt="Contact Page Image Preview" fill className="object-contain" />
               </div>
             )}
             {state?.errors?.contactPageImageUrl && <p className="text-sm text-destructive">{state.errors.contactPageImageUrl[0]}</p>}

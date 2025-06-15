@@ -63,7 +63,7 @@ export async function login(prevState: any, formData: FormData) {
   const adminCreds = await dbGetAdminCredentials();
 
   if (email === adminCreds.email && password === adminCreds.password) {
-    cookies().set(ADMIN_SESSION_COOKIE_NAME, "loggedIn", {
+    (await cookies()).set(ADMIN_SESSION_COOKIE_NAME, "loggedIn", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: 60 * 60 * 24 * 7, // 1 week
@@ -77,7 +77,7 @@ export async function login(prevState: any, formData: FormData) {
 }
 
 export async function logout() {
-  cookies().delete(ADMIN_SESSION_COOKIE_NAME);
+  (await cookies()).delete(ADMIN_SESSION_COOKIE_NAME);
   redirect(ADMIN_LOGIN_PATH);
 }
 
@@ -244,7 +244,7 @@ export async function updateSiteSettings(prevState: any, formData: FormData) {
 
 
 export async function checkAdminSession() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const session = cookieStore.get(ADMIN_SESSION_COOKIE_NAME);
   return session?.value === "loggedIn";
 }

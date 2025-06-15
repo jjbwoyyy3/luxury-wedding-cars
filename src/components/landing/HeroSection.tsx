@@ -35,9 +35,8 @@ const HeroSection = async () => { // Make component async
           <Image
             src={heroImageUrl}
             alt="Luxury wedding car convoy"
-            layout="fill"
-            objectFit="cover"
-            className="rounded-lg shadow-2xl"
+            fill
+            className="rounded-lg shadow-2xl object-cover"
             data-ai-hint="luxury car"
             priority
           />

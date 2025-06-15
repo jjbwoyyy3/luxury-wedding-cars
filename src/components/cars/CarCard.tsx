@@ -17,9 +17,8 @@ const CarCard = ({ car, showDetailsButton = true }: CarCardProps) => {
           <Image
             src={car.imageUrl || "https://placehold.co/400x300.png"}
             alt={car.name}
-            layout="fill"
-            objectFit="cover"
-            className="transition-transform duration-500 hover:scale-105"
+            fill
+            className="object-cover transition-transform duration-500 hover:scale-105"
             data-ai-hint={car.name.toLowerCase().split(' ').slice(0,2).join(' ') || "luxury car"}
           />
         </div>

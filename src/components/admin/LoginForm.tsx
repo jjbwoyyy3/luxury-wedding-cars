@@ -26,7 +26,7 @@ function SubmitButton() {
 
 export default function LoginForm() {
   const [isMounted, setIsMounted] = useState(false);
-  const initialState = { message: null, errors: {}, success: false };
+  const initialState = { message: "", errors: {}, success: false };
   const [state, dispatch] = useActionState(login, initialState);
   const { toast } = useToast();
 
@@ -42,7 +42,7 @@ export default function LoginForm() {
       });
       // Use window.location.href for a full page redirect
       window.location.href = ADMIN_DASHBOARD_PATH;
-    } else if (state.message) { 
+    } else if (state.message && state.message !== "") { 
       // Show general error toast only if there are no specific field errors
       // and login wasn't successful and the message is not "Invalid input."
       // which is typically accompanied by field errors.
@@ -124,7 +124,7 @@ export default function LoginForm() {
                 </p>
               )}
             </div>
-             {state?.message && !state.success && !state.errors?.email && !state.errors?.password && state.message !== "Invalid input." && (
+             {state?.message && state.message !== "" && !state.success && !state.errors?.email && !state.errors?.password && state.message !== "Invalid input." && (
               <Alert variant="destructive" className="mt-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Error</AlertTitle>

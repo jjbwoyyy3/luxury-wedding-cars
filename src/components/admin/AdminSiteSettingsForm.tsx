@@ -31,7 +31,7 @@ function SubmitButton() {
 
 export default function AdminSiteSettingsForm({ siteSettings: initialSiteSettings }: AdminSiteSettingsFormProps) {
   const [currentSettings, setCurrentSettings] = useState(initialSiteSettings);
-  const initialState = { message: null, errors: {}, success: false, noChanges: false, currentData: initialSiteSettings };
+  const initialState = { message: "", errors: {}, success: false, currentData: initialSiteSettings };
   const [state, dispatch] = useActionState(updateSiteSettings, initialState);
   const { toast } = useToast();
   const router = useRouter();
@@ -121,7 +121,7 @@ export default function AdminSiteSettingsForm({ siteSettings: initialSiteSetting
             />
             {heroImagePreview && (
               <div className="mt-2 relative w-full h-64 rounded-md overflow-hidden border">
-                <Image src={heroImagePreview} alt="Hero Image Preview" layout="fill" objectFit="contain" />
+                <Image src={heroImagePreview} alt="Hero Image Preview" fill className="object-contain" />
               </div>
             )}
             {state?.errors?.heroImageUrl && <p className="text-sm text-destructive">{state.errors.heroImageUrl[0]}</p>}

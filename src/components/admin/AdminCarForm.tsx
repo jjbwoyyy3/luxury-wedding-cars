@@ -33,7 +33,7 @@ function SubmitButton({ isEditing }: { isEditing: boolean }) {
 export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
   const isEditing = !!car;
   const action = isEditing ? updateCar : addCar;
-  const initialState = { message: null, errors: {}, success: false };
+  const initialState = { message: "", errors: {}, success: false };
   const [state, dispatch] = useActionState(action, initialState);
   const { toast } = useToast();
 
@@ -99,7 +99,7 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
   };
 
   useEffect(() => {
-    if (state.message) {
+    if (state.message && state.message !== "") {
       toast({
         title: state.success ? (isEditing ? "Car Updated" : "Car Added") : "Error",
         description: state.message,
@@ -167,13 +167,13 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
             />
             {imagePreview && (
               <div className="mt-2 relative w-full h-48 rounded-md overflow-hidden border">
-                <Image src={imagePreview} alt="Image Preview" layout="fill" objectFit="contain" />
+                <Image src={imagePreview} alt="Image Preview" fill className="object-contain" />
               </div>
             )}
             {state?.errors?.imageUrl && <p className="text-sm text-destructive">{state.errors.imageUrl[0]}</p>}
           </div>
           
-          {state.message && !state.success && (
+          {state.message && state.message !== "" && !state.success && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{state.message}</AlertDescription>

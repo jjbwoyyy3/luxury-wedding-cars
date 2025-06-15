@@ -48,8 +48,8 @@ export default function AdminCarItem({ car, onEdit }: AdminCarItemProps) {
           <Image
             src={car.imageUrl || "https://placehold.co/100x75.png"}
             alt={car.name}
-            layout="fill"
-            objectFit="cover"
+            fill
+            className="object-cover"
             data-ai-hint={car.name.toLowerCase().split(' ').slice(0,2).join(' ') || "small car"}
           />
         </div>

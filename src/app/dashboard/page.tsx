@@ -59,10 +59,9 @@ export default async function DashboardPage() {
            <Image
             src={contactPageImageUrl}
             alt="Luxury car interior or contact image"
-            layout="fill"
-            objectFit="cover"
+            fill
+            className="rounded-lg object-cover"
             data-ai-hint="luxury car interior"
-            className="rounded-lg"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex items-end p-6">
             <p className="text-white text-xl font-semibold">Let us make your journey memorable.</p>
