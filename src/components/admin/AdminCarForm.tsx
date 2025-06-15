@@ -37,32 +37,31 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
   const [state, dispatch] = useActionState(action, initialState);
   const { toast } = useToast();
 
+  const [name, setName] = useState(car?.name || "");
+  const [description, setDescription] = useState(car?.description || "");
   const [imagePreview, setImagePreview] = useState<string | null>(car?.imageUrl || null);
   const [finalImageUrl, setFinalImageUrl] = useState<string>(car?.imageUrl || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const nameInputRef = useRef<HTMLInputElement>(null);
-  const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
-
 
   useEffect(() => {
     if (car) {
+      setName(car.name);
+      setDescription(car.description);
       setImagePreview(car.imageUrl);
       setFinalImageUrl(car.imageUrl);
-      if (nameInputRef.current) nameInputRef.current.value = car.name;
-      if (descriptionInputRef.current) descriptionInputRef.current.value = car.description;
     } else {
       // For add mode
+      setName("");
+      setDescription("");
       setImagePreview(null);
       setFinalImageUrl('');
       if (fileInputRef.current) fileInputRef.current.value = "";
-      if (nameInputRef.current) nameInputRef.current.value = "";
-      if (descriptionInputRef.current) descriptionInputRef.current.value = "";
     }
   }, [car]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (fileInputRef.current) fileInputRef.current.value = ""; // Clear momentarily to allow re-selection of same file
+    if (fileInputRef.current) fileInputRef.current.value = ""; 
 
     if (file) {
       const reader = new FileReader();
@@ -94,7 +93,6 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
       };
       reader.readAsDataURL(file);
     } else {
-      // No file selected, revert to original if editing, or clear if adding
       setImagePreview(car?.imageUrl || null);
       setFinalImageUrl(car?.imageUrl || '');
     }
@@ -111,11 +109,11 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
         if (onFormSubmit) onFormSubmit();
         if (!isEditing) {
           // Reset form fields for "Add New" case
+          setName("");
+          setDescription("");
           setImagePreview(null);
           setFinalImageUrl('');
           if (fileInputRef.current) fileInputRef.current.value = "";
-          if (nameInputRef.current) nameInputRef.current.value = "";
-          if (descriptionInputRef.current) descriptionInputRef.current.value = "";
         }
       }
     }
@@ -134,12 +132,26 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="name">Car Name</Label>
-            <Input id="name" name="name" ref={nameInputRef} defaultValue={car?.name || ""} placeholder="e.g., Rolls Royce Phantom" required />
+            <Input 
+              id="name" 
+              name="name" 
+              value={name} 
+              onChange={(e) => setName(e.target.value)} 
+              placeholder="e.g., Rolls Royce Phantom" 
+              required 
+            />
             {state?.errors?.name && <p className="text-sm text-destructive">{state.errors.name[0]}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea id="description" name="description" ref={descriptionInputRef} defaultValue={car?.description || ""} placeholder="e.g., The pinnacle of luxury motoring..." required />
+            <Textarea 
+              id="description" 
+              name="description" 
+              value={description} 
+              onChange={(e) => setDescription(e.target.value)} 
+              placeholder="e.g., The pinnacle of luxury motoring..." 
+              required 
+            />
             {state?.errors?.description && <p className="text-sm text-destructive">{state.errors.description[0]}</p>}
           </div>
           <div className="space-y-2">
@@ -150,7 +162,7 @@ export default function AdminCarForm({ car, onFormSubmit }: AdminCarFormProps) {
               type="file" 
               accept="image/*" 
               onChange={handleFileChange}
-              ref={fileInputRef} // Use ref here
+              ref={fileInputRef}
               className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
             />
             {imagePreview && (
